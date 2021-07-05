@@ -1,3 +1,5 @@
+import * as coco from "@tensorflow-models/coco-ssd";
+import * as mobilenet from "@tensorflow-models/mobilenet";
 import * as tf from "@tensorflow/tfjs";
 import { cameraWithTensors } from "@tensorflow/tfjs-react-native";
 import { Camera } from "expo-camera";
@@ -19,8 +21,8 @@ export default function App() {
   const [isEnabled, setIsEnabled] = useState(false);
   const toggleSwitch = () => setIsEnabled((prev) => !prev);
 
-  const [coco, setCocoModel] = useState();
-  const [mobilenet, setMobilenetModel] = useState(null);
+  const [cocoModel, setCocoModel] = useState();
+  const [mobilenetModel, setMobilenetModel] = useState(null);
   const [frameworkReady, setFrameworkReady] = useState(false);
 
   let requestAnimationFrameId = 0;
@@ -44,8 +46,8 @@ export default function App() {
     }
 
     //topk set to 1
-    // const prediction = await mobilenetModel.classify(tensor, 1);
-    const prediction = await coco.detect(tensor);
+    const prediction = await mobilenetModel.classify(tensor, 1);
+    // const prediction = await cocoModel.classify(tensor);
 
     setPrediction(prediction);
     console.log(`prediction: ${JSON.stringify(prediction)}`);

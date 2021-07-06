@@ -16,7 +16,7 @@ const tensorDims = { width: 200, height: 200 };
 
 export default function App() {
   const [image, setImage] = useState();
-  const [prediction, setPrediction] = useState();
+  const [predictions, setPredictions] = useState();
   const [predictionFound, setPredictionFound] = useState();
   const [isEnabled, setIsEnabled] = useState(false);
   const toggleSwitch = () => setIsEnabled((prev) => !prev);
@@ -24,6 +24,7 @@ export default function App() {
   const [cocoModel, setCocoModel] = useState();
   const [mobilenetModel, setMobilenetModel] = useState(null);
   const [frameworkReady, setFrameworkReady] = useState(false);
+  // const canvasRef = useRef(null);
 
   let requestAnimationFrameId = 0;
   //performance hacks (Platform dependent)
@@ -40,16 +41,55 @@ export default function App() {
     }
   }, []);
 
+  // // https://github.com/cnebs/object-detector/blob/master/src/App.js
+  // const buildRectangle = (discriminations) => {
+  //   // !!!!
+  //   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+  //   // !!!!
+
+  //   const ctx = canvasRef.current.getContext("2d"); // define the rectangle
+  //   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  //   // Build the rectangle styling
+  //   ctx.lineWidth = 2;
+  //   ctx.textBaseline = "bottom";
+  //   ctx.font = "14px sans-serif";
+
+  //   discriminations.forEach((guess) => {
+  //     // Draw the rectangle around each object prediction
+  //     const guessText = `${guess.class}`;
+
+  //     ctx.strokeStyle = classData[guessText]; // give each guess.class's box a unique color
+
+  //     const textWidth = ctx.measureText(guessText).width;
+  //     const textHeight = parseInt(ctx.font, 10);
+  //     ctx.strokeRect(
+  //       guess.bbox[0],
+  //       guess.bbox[1],
+  //       guess.bbox[2],
+  //       guess.bbox[3]
+  //     );
+  //     ctx.fillStyle = "white";
+  //     ctx.fillRect(
+  //       guess.bbox[0] - ctx.lineWidth / 2, // place the label on the top left of the box
+  //       guess.bbox[1],
+  //       textWidth + ctx.lineWidth,
+  //       -textHeight
+  //     );
+  //     ctx.fillStyle = "#fc0303"; // color the label text red, always
+  //     ctx.fillText(guessText, guess.bbox[0], guess.bbox[1]);
+  //   });
+  // };
+
   const getPrediction = async (tensor) => {
     if (!tensor) {
       return;
     }
 
-    //topk set to 1
-    const prediction = await mobilenetModel.classify(tensor, 1);
-    // const prediction = await cocoModel.classify(tensor);
+    // const prediction = await mobilenetModel.classify(tensor, 1);
+    const prediction = await cocoModel.detect(tensor, 20, 0.2);
 
-    setPrediction(prediction);
+    setPredictions(prediction);
     console.log(`prediction: ${JSON.stringify(prediction)}`);
 
     if (!prediction || prediction.length === 0) {
@@ -139,37 +179,17 @@ export default function App() {
   //   );
   // };
 
-  /*-----------------------------------------------------------------------
-Helper function to show the Camera View. 
-
-NOTE: Please note we are using TensorCamera component which is constructed on line: 37 of this function component. This is just a decorated expo.Camera component with extra functionality to stream Tensors, define texture dimensions and other goods. For further research:
-https://js.tensorflow.org/api_react_native/0.2.1/#cameraWithTensors
------------------------------------------------------------------------*/
-  const renderCameraView = () => {
-    return (
-      <View style={styles.cameraView}>
-        <TensorCamera
-          style={styles.camera}
-          type={Camera.Constants.Type.back}
-          zoom={0}
-          cameraTextureHeight={textureDims.height}
-          cameraTextureWidth={textureDims.width}
-          resizeHeight={tensorDims.height}
-          resizeWidth={tensorDims.width}
-          resizeDepth={3}
-          onReady={(imageAsTensors) => handleCameraStream(imageAsTensors)}
-          autorender={true}
-        />
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       {/* <Button title="Choose Image" onPress={selectImage} /> */}
-      <View style={{ height: 100 }}>
-        <Text>{JSON.stringify(prediction)}</Text>
+      <View style={{ height: 100, textAlign: "left" }}>
+        {predictions &&
+          predictions.map((prediction) => (
+            <Text style={{ textAlign: "left" }}>
+              {prediction.class}: {prediction.score.toFixed(3)}
+            </Text>
+          ))}
       </View>
 
       <TensorCamera
@@ -185,7 +205,16 @@ https://js.tensorflow.org/api_react_native/0.2.1/#cameraWithTensors
         resizeDepth={3}
         onReady={(imageAsTensors) => handleCameraStream(imageAsTensors)}
         autorender={true}
-      />
+      >
+        <View
+          style={{
+            width: 100,
+            height: 100,
+            backgroundColor: "red",
+            zIndex: 9999,
+          }}
+        ></View>
+      </TensorCamera>
       <View
         style={{
           height: 100,
